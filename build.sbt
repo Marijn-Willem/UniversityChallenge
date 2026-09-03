@@ -1,9 +1,15 @@
 scalaVersion := "3.8.4"
 
-lazy val root = rootProject
+assembly / mainClass := Some("http.Main")
+assembly / assemblyJarName := "universitychallenge.jar"
+
+lazy val root = (project in file("."))
   .settings(
     name := "UniversityChallenge",
     libraryDependencies ++= Seq(
-      "org.tpolecat" %% "skunk-core" % "1.0.0"
+      "org.postgresql" % "postgresql" % "42.7.13",
+      "org.apache.pekko" %% "pekko-actor-typed" % "1.7.0",
+      "org.apache.pekko" %% "pekko-stream" % "1.7.0",
+      "org.apache.pekko" %% "pekko-http" % "1.4.0"
     )
   )
