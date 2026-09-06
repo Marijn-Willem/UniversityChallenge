@@ -30,9 +30,14 @@ object Main {
     path("city" / "options") {
       getStandardRoute(CityHtmlBuilder.getCityOptions)
     },
-    path("city" / "insert") {
-      parameters("nm") { name =>
-        getStandardRoute(CityHtmlBuilder.getResultInsertCity(name))
+    path("city" / "manage") {
+      parameters("id".?) { id =>
+        getStandardRoute(CityHtmlBuilder.getHtmlManageCity(id.map(_.toInt)))
+      }
+    },
+    path("city" / "upsert") {
+      parameters("nm", "id".?) { (name, id) =>
+        getStandardRoute(CityHtmlBuilder.getResultUpsertCity(name, id.map(_.toInt)))
       }
     }
   )
