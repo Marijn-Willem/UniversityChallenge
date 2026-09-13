@@ -1,13 +1,13 @@
 package http
 
-import http.html.{CityHtmlBuilder, FrontHtmlBuilder}
+import http.html.FrontHtmlBuilder
+import http.route.RouteUtil.getStandardRoute
+import http.route.{CityRoute, SeasonEpisodeRoute, SeasonRoute, SeasonTeamRoute, TeamRoute}
 import org.apache.pekko
 import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.http.scaladsl.Http
-import org.apache.pekko.http.scaladsl.model.{ContentTypes, HttpEntity}
 import org.apache.pekko.http.scaladsl.server.Directives.*
-import org.apache.pekko.http.scaladsl.server.StandardRoute
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
@@ -24,22 +24,11 @@ object Main {
     path("") {
       getStandardRoute(FrontHtmlBuilder.getHtmlFrontPage)
     },
-    path("city" / "portal") {
-      getStandardRoute(CityHtmlBuilder.getHtmlCityPortal)
-    },
-    path("city" / "options") {
-      getStandardRoute(CityHtmlBuilder.getCityOptions)
-    },
-    path("city" / "manage") {
-      parameters("id".?) { id =>
-        getStandardRoute(CityHtmlBuilder.getHtmlManageCity(id.map(_.toInt)))
-      }
-    },
-    path("city" / "upsert") {
-      parameters("nm", "id".?) { (name, id) =>
-        getStandardRoute(CityHtmlBuilder.getResultUpsertCity(name, id.map(_.toInt)))
-      }
-    }
+    CityRoute.route,
+    TeamRoute.route,
+    SeasonRoute.route,
+    SeasonTeamRoute.route,
+    SeasonEpisodeRoute.route
   )
 
   def main(args: Array[String]): Unit = {
@@ -57,6 +46,4 @@ object Main {
 
     ActorSystem(behaviors, "main-system")
   }
-
-  private def getStandardRoute(html: String): StandardRoute = complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, html))
 }

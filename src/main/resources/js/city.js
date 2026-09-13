@@ -5,15 +5,8 @@ const cityListLoader = new ElementLoader('selCity', function () {
 const upsertCityLoader = new ElementLoader('inpId', function () {
     const id = document.getElementById('inpId').value;
     const nm = document.getElementById('nm').value;
-    return '/city/upsert?nm=' + nm + (!isEmptyOrNull(id) ? '&id=' + id : '');
-}, function () {
-    const inpId = document.getElementById('inpId');
-    const elButUps = document.getElementById('butUps');
-
-    inpId.value = inpId.innerText;
-    document.getElementById('divUps').innerText = `${elButUps.value} successful`;
-    elButUps.value = 'Update';
-});
+    return `/city/upsert?nm=${nm}${!isEmptyOrNull(id) ? '&id=' + id : ''}`;
+}, callBackUpsert);
 
 function loadCityList() {
     cityListLoader.loadElement();

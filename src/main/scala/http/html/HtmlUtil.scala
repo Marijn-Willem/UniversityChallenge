@@ -1,7 +1,7 @@
 package http.html
 
 import db.conn.{DbManager, IdEntityManager}
-import db.model.Model.IdEntity
+import db.model.Model.{IdEntity, NamedIdEntity}
 
 import java.sql.Statement
 
@@ -17,11 +17,23 @@ object HtmlUtil {
     )
 
     val fStat = (stat: Statement) => s"<!DOCTYPE html>\n<html>\n<head>\n$linkTag\n$jsTags\n</head>\n" +
-      s"<body${getStringFromOption(onload.map(x => " onload=\""+x+"\";"))}>\n${fBody(stat)}" +
+      s"<body${getStringFromOption(onload.map(x => s" onload=\"$x\";"))}>\n${fBody(stat)}" +
       s"$divReturnPath</body>\n<html>\n"
 
     DbManager.getStringFromStatement(fStat)
   }
+
+  def getHtmlManageIdEntity[T <: IdEntity](id: Option[Int], constMan: Statement => IdEntityManager[T],
+                                           contentSpecific: (Option[T], Statement) => String, jsList: Seq[String],
+                                           returnPath: Option[String]): String = withHtmlTemplate((stat: Statement) => {
+    val maybeEntity = id.map(constMan(stat).getEntityById).getOrElse(Option.empty[T])
+    val buttonValue = id.map(_ => "Update").getOrElse("Insert")
+
+    contentSpecific(maybeEntity, stat) +
+      s"<div><input id=\"butUps\" type=\"button\" value=\"$buttonValue\" onclick=\"handleUps();\" /></div>\n" +
+      s"<input id=\"inpId\" type=\"hidden\" value=\"${getStringFromOption(id.map(_.toString))}\" />\n" +
+      "<div id=\"divUps\"></div>\n"
+  }, jsList, returnPath)
 
   def getResultUpsert[T <: IdEntity](id: Option[Int], constMan: Statement => IdEntityManager[T],
                                      constT: Int => T, cp: T => T): String =
@@ -33,12 +45,19 @@ object HtmlUtil {
 
       val entityNew = cp(id.flatMap(_ => entityFromDb).getOrElse(entityCreated))
 
-      val action = id.foldLeft(man.insert) { case (_, _) => man.update }
+      val action = id.map(_ => man.update).getOrElse(man.insert)
 
       action(entityNew)
 
       entityNew.id.toString
     })
+
+  def getSelectOption(entity: NamedIdEntity, sel: Option[Int] = None): String = {
+    val id = entity.id
+    val selected = sel.filter(_ == id).map(_ => " selected=\"selected\"").getOrElse("")
+    
+    s"<option value=\"$id\"$selected>${getStringFromOption(entity.name)}</option>\n"
+  }
 
   def getStringFromOption(optStr: Option[String]): String = optStr.getOrElse("")
 }

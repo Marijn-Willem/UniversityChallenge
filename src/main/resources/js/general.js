@@ -20,6 +20,15 @@ function ElementLoader(elId, getUrl, callBack) {
     }
 }
 
+function callBackUpsert() {
+    const inpId = document.getElementById('inpId');
+    const elButUps = document.getElementById('butUps');
+
+    inpId.value = inpId.innerText;
+    document.getElementById('divUps').innerText = `${elButUps.value} successful`;
+    elButUps.value = 'Update';
+}
+
 function isEmptyOrNull(el) {
     return el === undefined || el === null || el === '';
 }

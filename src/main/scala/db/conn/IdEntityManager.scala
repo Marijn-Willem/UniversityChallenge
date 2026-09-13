@@ -23,8 +23,9 @@ abstract class IdEntityManager[T <: IdEntity](stat: Statement, val tableName: St
       None
   }
 
-  def getList: Seq[T] = {
-    val query = s"SELECT $columnString FROM $tableName"
+  def getList(whereClause: Option[String] = None): Seq[T] = {
+    val query = s"SELECT $columnString FROM $tableName" +
+      s"${whereClause.map(x => s" WHERE $x").getOrElse("")}"
     val ab = ArrayBuffer.empty[T]
 
     val rs = stat.executeQuery(query)
@@ -51,5 +52,5 @@ abstract class IdEntityManager[T <: IdEntity](stat: Statement, val tableName: St
     1 + (if (rs.next()) rs.getInt("maxId") else 0)
   }
 
-  protected def getStringForInsert(optStr: Option[String]): String = optStr.fold("NULL"){ x => s"'$x'"}
+  protected def getStringForInsert(optStr: Option[String]): String = optStr.map(x => s"'$x'").getOrElse("NULL")
 }
