@@ -2,15 +2,16 @@ package http.html
 
 import db.conn.{CityManager, DbManager}
 import db.model.Model.City
-import http.html.HtmlUtil.{getHtmlManageIdEntity, getResultUpsert, getSelectOption, getStringFromOption, withHtmlTemplate}
+import http.html.HtmlUtil.*
 
 import java.sql.Statement
 
 object CityHtmlBuilder {
-  def getHtmlCityPortal: String = withHtmlTemplate((stat: Statement) =>
+  def getHtmlCityPortal(id: Option[Int]): String = withHtmlTemplate(_ =>
     "<div>\n<select id=\"selCity\">\n</select>\n</div>\n" +
     "<div><input type=\"button\" onclick=\"goToManageCity();\" value=\"Manage\" /></div>\n" +
-    "<div><input type=\"button\" onclick=\"goToInsertCity();\" value=\"Insert\" /></div>\n"
+    "<div><input type=\"button\" onclick=\"goToInsertCity();\" value=\"Insert\" /></div>\n" +
+    getInpIdInput(id)
   , Seq("city"), Some(""), Some("loadCityList()"))
 
   def getHtmlManageCity(id: Option[Int]): String = {
@@ -21,14 +22,13 @@ object CityHtmlBuilder {
     getHtmlManageIdEntity(id,
       (stat: Statement) => new CityManager(stat),
       contentSpecific,
-      Seq("city"), Some("city/portal")
+      Seq("city"), Some(getPortalUrl("city", id))
     )
   }
 
-  def getHtmlCityOptions: String = DbManager.getStringFromStatement((stat: Statement) => getCityOptions(stat))
+  def getHtmlCityOptions(id: Option[Int]): String = DbManager.getStringFromStatement(getCityOptions(_, id))
 
-  def getCityOptions(stat: Statement, sel: Option[Int] = None): String =
-    new CityManager(stat).getList().map(getSelectOption(_, sel)).mkString
+  def getCityOptions(stat: Statement, sel: Option[Int]): String = getSelectOptions(new CityManager(stat), sel)
 
   def getResultUpsertCity(name: String, id: Option[Int]): String = getResultUpsert(
     id,

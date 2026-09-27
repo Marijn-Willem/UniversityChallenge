@@ -10,15 +10,18 @@ object HtmlUtil {
                        returnPath: Option[String] = None, onload: Option[String] = None): String = {
     def getJsTag(js: String): String = s"<script type=\"text/javascript\" src=\"/js/$js.js\"></script>"
 
-    val linkTag = "<link rel=\"stylesheet\" href=\"/css/styling.css\" />"
-    val jsTags = ("general"+:jsList).map(getJsTag).mkString("\n")
+    val styleTag = "<link rel=\"stylesheet\" href=\"/css/styling.css\" />\n"
+    val jsTags = s"${("general"+:jsList).map(getJsTag).mkString("\n")}\n"
+    val scriptReturnPath = getStringFromOption(returnPath.map(p =>
+      s"<script type=\"text/javascript\">\nlet returnPath = '$p';\n</script>\n")
+    )
     val divReturnPath = getStringFromOption(
-      returnPath.map(p => s"<br/><div><input type=\"button\" onclick=\"goToUrl('$p');\" value=\"Return\" /></div>\n")
+      returnPath.map(_ => s"<br/><div><input type=\"button\" onclick=\"goToUrl(returnPath);\" value=\"Return\" /></div>\n")
     )
 
-    val fStat = (stat: Statement) => s"<!DOCTYPE html>\n<html>\n<head>\n$linkTag\n$jsTags\n</head>\n" +
+    val fStat = (stat: Statement) => s"<!DOCTYPE html>\n<html>\n<head>\n$styleTag$jsTags$scriptReturnPath</head>\n" +
       s"<body${getStringFromOption(onload.map(x => s" onload=\"$x\";"))}>\n${fBody(stat)}" +
-      s"$divReturnPath</body>\n<html>\n"
+      s"$divReturnPath</body>\n</html>\n"
 
     DbManager.getStringFromStatement(fStat)
   }
@@ -31,7 +34,7 @@ object HtmlUtil {
 
     contentSpecific(maybeEntity, stat) +
       s"<div><input id=\"butUps\" type=\"button\" value=\"$buttonValue\" onclick=\"handleUps();\" /></div>\n" +
-      s"<input id=\"inpId\" type=\"hidden\" value=\"${getStringFromOption(id.map(_.toString))}\" />\n" +
+      getInpIdInput(id) +
       "<div id=\"divUps\"></div>\n"
   }, jsList, returnPath)
 
@@ -52,12 +55,23 @@ object HtmlUtil {
       entityNew.id.toString
     })
 
-  def getSelectOption(entity: NamedIdEntity, sel: Option[Int] = None): String = {
+  def getSelectOptions[T <: NamedIdEntity](man: IdEntityManager[T], sel: Option[Int]): String =
+    man.getList().sortBy(_.name.getOrElse("-")).map(getSelectOption(_, sel)).mkString
+
+  def getSelectOption(entity: NamedIdEntity, sel: Option[Int]): String = {
     val id = entity.id
-    val selected = sel.filter(_ == id).map(_ => " selected=\"selected\"").getOrElse("")
+    val attrSel = getStringFromOption(sel.filter(_ == id).map(_ => " selected=\"selected\""))
     
-    s"<option value=\"$id\"$selected>${getStringFromOption(entity.name)}</option>\n"
+    s"<option value=\"$id\"$attrSel>${getStringFromOption(entity.name)}</option>\n"
   }
+
+  def getInpIdInput(id: Option[Int]): String = getHiddenInput("inpId", id)
+
+  def getHiddenInput(id: String, value: Option[Int]): String = s"<input id=\"$id\" type=\"hidden\" value=\"" +
+    s"${getStringFromOption(value.map(_.toString))}\" />\n"
+
+  def getPortalUrl(entityName: String, id: Option[Int]): String = s"$entityName/portal" +
+    s"${getStringFromOption(id.map(x => s"?id=$x"))}"
 
   def getStringFromOption(optStr: Option[String]): String = optStr.getOrElse("")
 }

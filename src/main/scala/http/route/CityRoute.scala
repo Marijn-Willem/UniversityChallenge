@@ -8,10 +8,14 @@ import org.apache.pekko.http.scaladsl.server.Route
 object CityRoute {
   val route: Route = concat(
     path("city" / "portal") {
-      getStandardRoute(CityHtmlBuilder.getHtmlCityPortal)
+      parameters("id".?) { id => 
+        getStandardRoute(CityHtmlBuilder.getHtmlCityPortal(id.map(_.toInt)))
+      }
     },
     path("city" / "options") {
-      getStandardRoute(CityHtmlBuilder.getHtmlCityOptions)
+      parameters("id".?) { id =>
+        getStandardRoute(CityHtmlBuilder.getHtmlCityOptions(id.map(_.toInt)))
+      }
     },
     path("city" / "manage") {
       parameters("id".?) { id =>

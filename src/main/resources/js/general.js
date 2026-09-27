@@ -24,13 +24,32 @@ function callBackUpsert() {
     const inpId = document.getElementById('inpId');
     const elButUps = document.getElementById('butUps');
 
-    inpId.value = inpId.innerText;
+    const isInsert = isEmptyOrNull(inpId.value);
     document.getElementById('divUps').innerText = `${elButUps.value} successful`;
-    elButUps.value = 'Update';
+
+    if (isInsert) {
+        elButUps.value = 'Update';
+        const id = inpId.innerText
+        inpId.value = id;
+        returnPath = appendIfNonEmpty(returnPath, 'id', id);
+    }
+}
+
+function getOptionsUrl(entityName) {
+    let url = `/${entityName}/options`;
+    url = appendIfNonEmpty(url, 'id', document.getElementById('inpId').value);
+
+    return url;
 }
 
 function isEmptyOrNull(el) {
     return el === undefined || el === null || el === '';
+}
+
+function appendIfNonEmpty(url, param, str) {
+    const delim = url.indexOf('?') >= 0 ? '&' : '?';
+
+    return `${url}${!isEmptyOrNull(str) ? `${delim}${param}=${str}` : ''}`;
 }
 
 function goToUrl(url, parameters) {

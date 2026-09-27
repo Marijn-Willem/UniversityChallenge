@@ -2,16 +2,17 @@ package http.html
 
 import db.conn.{DbManager, TeamManager}
 import db.model.Model.Team
-import http.html.HtmlUtil.{getResultUpsert, getSelectOption, withHtmlTemplate}
+import http.html.HtmlUtil.*
 
 import java.sql.Statement
 
 object TeamHtmlBuilder {
-  def getHtmlTeamPortal: String = withHtmlTemplate((stat: Statement) =>
+  def getHtmlTeamPortal(id: Option[Int]): String = withHtmlTemplate((stat: Statement) =>
     "<div>\n<select id=\"selTeam\">\n</select>\n</div>\n" +
       "<div><input type=\"button\" onclick=\"goToManageTeam();\" value=\"Manage\" /></div>\n" +
       "<div><input type=\"button\" onclick=\"goToInsertTeam();\" value=\"Insert\" /></div>\n" +
-      "<div><input type=\"button\" onclick=\"goToSeasonTeamPortal();\" value=\"Season Team\" /></div>\n"
+      "<div><input type=\"button\" onclick=\"goToSeasonTeamPortal();\" value=\"Season Team\" /></div>\n" +
+      getInpIdInput(id)
   , Seq("team"), Some(""), Some("loadTeamList()"))
 
   def getHtmlManageTeam(id: Option[Int]): String = {
@@ -23,12 +24,11 @@ object TeamHtmlBuilder {
     HtmlUtil.getHtmlManageIdEntity(id,
       (stat: Statement) => new TeamManager(stat),
       contentSpecific,
-      Seq("team"), Some("team/portal"))
+      Seq("team"), Some(getPortalUrl("team", id)))
   }
 
-  def getHtmlTeamOptions: String = DbManager.getStringFromStatement((stat: Statement) =>
-    new TeamManager(stat).getList().map(getSelectOption(_)).mkString
-  )
+  def getHtmlTeamOptions(id: Option[Int]): String = DbManager.getStringFromStatement((stat: Statement) =>
+    getSelectOptions(new TeamManager(stat), id))
 
   def getResultUpsertTeam(name: String, cityId: Int, id: Option[Int]): String = getResultUpsert(
     id,

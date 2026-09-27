@@ -52,5 +52,8 @@ abstract class IdEntityManager[T <: IdEntity](stat: Statement, val tableName: St
     1 + (if (rs.next()) rs.getInt("maxId") else 0)
   }
 
-  protected def getStringForInsert(optStr: Option[String]): String = optStr.map(x => s"'$x'").getOrElse("NULL")
+  protected def getStringForInsert(optStr: Option[String]): String = optStr.map(x =>
+    s"'${replaceInvalidDbCharacters(x)}'").getOrElse("NULL")
+
+  private def replaceInvalidDbCharacters(str: String) = str.replace("'", "''")
 }

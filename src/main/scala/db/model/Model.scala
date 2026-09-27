@@ -7,7 +7,6 @@ object Model {
   trait NamedIdEntity extends IdEntity { val name: Option[String] }
   case class City(id: Int, name: Option[String]) extends NamedIdEntity
   case class Season(id: Int, name: Option[String]) extends NamedIdEntity
-  case class Round(id: Int, name: Option[String]) extends NamedIdEntity
   case class Episode(id: Int, roundId: Int) extends IdEntity
   case class Team(id: Int, name: Option[String], cityId: Int) extends NamedIdEntity
   case class SeasonTeam(seasonId: Int, teamId: Int)

@@ -8,10 +8,14 @@ import org.apache.pekko.http.scaladsl.server.Route
 object TeamRoute {
   val route: Route = concat(
     path("team" / "portal") {
-      getStandardRoute(TeamHtmlBuilder.getHtmlTeamPortal)
+      parameters("id".?) { id =>
+        getStandardRoute(TeamHtmlBuilder.getHtmlTeamPortal(id.map(_.toInt)))
+      }
     },
     path("team" / "options") {
-      getStandardRoute(TeamHtmlBuilder.getHtmlTeamOptions)
+      parameters("id".?) { id => 
+        getStandardRoute(TeamHtmlBuilder.getHtmlTeamOptions(id.map(_.toInt)))
+      }
     },
     path("team" / "manage") {
       parameters("id".?) { id =>

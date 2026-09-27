@@ -8,13 +8,13 @@ import org.apache.pekko.http.scaladsl.server.Route
 object SeasonEpisodeRoute {
   val route: Route = concat(
     path("seasonepisode" / "portal") {
-      parameters("sid") { sid =>
-        getStandardRoute(SeasonEpisodeHtmlBuilder.getHtmlSeasonEpisodePortal(sid.toInt))
+      parameters("sid", "eid".?) { (sid, eid) =>
+        getStandardRoute(SeasonEpisodeHtmlBuilder.getHtmlSeasonEpisodePortal(sid.toInt, eid.map(_.toInt)))
       }
     },
     path("seasonepisode" / "options") {
-      parameters("sid") { sid =>
-        getStandardRoute(SeasonEpisodeHtmlBuilder.getSeasonEpisodeOptions(sid.toInt))
+      parameters("sid", "eid".?) { (sid, eid) =>
+        getStandardRoute(SeasonEpisodeHtmlBuilder.getSeasonEpisodeOptions(sid.toInt, eid.map(_.toInt)))
       }
     },
     path("seasonepisode" / "insert") {

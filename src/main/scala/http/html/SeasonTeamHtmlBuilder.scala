@@ -12,7 +12,7 @@ object SeasonTeamHtmlBuilder {
     "<div><input type=\"button\" onclick=\"handleInsertSeasonTeam();\" value=\"Insert\" /></div>\n" +
     "<div id=\"divIns\"></div>\n" +
     s"<input id=\"inpTeamId\" type=\"hidden\" value=\"$teamId\" />\n"
-  , Seq("seasonteam"), Some("team/portal"), Some("loadSeasonTeamOptions()"))
+  , Seq("seasonteam"), Some(s"team/portal?id=$teamId"), Some("loadSeasonTeamOptions()"))
 
   def getHtmlSeasonTeamOptions(teamId: Int): String = DbManager.getStringFromStatement((stat: Statement) => {
     val seasonIdsWithTeam = new SeasonTeamManager(stat).getSeasonIdsForTeam(teamId)
@@ -20,7 +20,7 @@ object SeasonTeamHtmlBuilder {
 
     val seasonsWithoutTeam = seasons.filterNot(s => seasonIdsWithTeam.contains(s.id))
 
-    seasonsWithoutTeam.map(HtmlUtil.getSelectOption(_)).mkString
+    seasonsWithoutTeam.map(HtmlUtil.getSelectOption(_, None)).mkString
   })
 
   def getResultInsertSeasonTeam(seasonId: Int, teamId: Int): String = DbManager.getStringFromStatement((stat: Statement) => {

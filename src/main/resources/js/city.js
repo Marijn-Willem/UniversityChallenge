@@ -1,5 +1,5 @@
 const cityListLoader = new ElementLoader('selCity', function () {
-    return '/city/options';
+    return getOptionsUrl('city');
 }, null);
 
 const upsertCityLoader = new ElementLoader('inpId', function () {

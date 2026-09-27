@@ -66,5 +66,5 @@ class SeasonEpisodeManager(stat: Statement) {
   private def getStringForIntUpdate(maybeInt: Option[Int]): String = maybeInt.map(_.toString).getOrElse("NULL::integer") 
 
   private def getStringForLocalDateUpdate(maybeLocalDate: Option[LocalDate]): String =
-    maybeLocalDate.map(ld => s"'${LocalDateUtil.toDelimitedString(ld, "-")}'").getOrElse("NULL:date")
+    maybeLocalDate.map(ld => s"'${LocalDateUtil.toDelimitedString(ld, "-")}'").getOrElse("NULL::date")
 }

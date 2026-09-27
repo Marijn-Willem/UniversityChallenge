@@ -2,16 +2,17 @@ package http.html
 
 import db.conn.{DbManager, SeasonManager}
 import db.model.Model.Season
-import http.html.HtmlUtil.{getSelectOption, getStringFromOption}
+import http.html.HtmlUtil.{getInpIdInput, getPortalUrl, getSelectOptions, getStringFromOption}
 
 import java.sql.Statement
 
 object SeasonHtmlBuilder {
-  def getHtmlSeasonPortal: String = HtmlUtil.withHtmlTemplate((stat: Statement) =>
+  def getHtmlSeasonPortal(id: Option[Int]): String = HtmlUtil.withHtmlTemplate((stat: Statement) =>
     "<div>\n<select id=\"selSeason\">\n</select>\n</div>\n" +
     "<div><input type=\"button\" onclick=\"goToManageSeason();\" value=\"Manage\" /></div>\n" +
     "<div><input type=\"button\" onclick=\"goToInsertSeason();\" value=\"Insert\" /></div>\n" +
-    "<div><input type=\"button\" onclick=\"goToSeasonEpisodePortal();\" value=\"Episodes\" /></div>\n"
+    "<div><input type=\"button\" onclick=\"goToSeasonEpisodePortal();\" value=\"Episodes\" /></div>\n" +
+    getInpIdInput(id)
   , Seq("season"), Some(""), Some("loadSeasonList()"))
 
   def getHtmlManageSeason(id: Option[Int]): String = {
@@ -21,12 +22,11 @@ object SeasonHtmlBuilder {
     HtmlUtil.getHtmlManageIdEntity(id,
       (stat: Statement) => new SeasonManager(stat),
       contSpecific,
-      Seq("season"), Some("season/portal"))
+      Seq("season"), Some(getPortalUrl("season", id)))
   }
 
-  def getHtmlSeasonOptions: String = DbManager.getStringFromStatement((stat: Statement) =>
-    new SeasonManager(stat).getList().map(getSelectOption(_)).mkString
-  )
+  def getHtmlSeasonOptions(id: Option[Int]): String = DbManager.getStringFromStatement((stat: Statement) =>
+    getSelectOptions(new SeasonManager(stat), id))
 
   def getResultUpsertSeason(name: String, id: Option[Int]): String =
     HtmlUtil.getResultUpsert(id,

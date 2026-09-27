@@ -1,5 +1,5 @@
 const teamListLoader = new ElementLoader('selTeam', function () {
-    return '/team/options';
+    return getOptionsUrl('team');
 }, null);
 
 const upsertTeamLoader = new ElementLoader('inpId', function () {

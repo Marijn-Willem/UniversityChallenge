@@ -55,7 +55,12 @@ function handleUpd() {
 
 function getLoaderUrl(specificPart) {
     const sid = document.getElementById('inpSeasId').value;
-    return `/seasonepisode/${specificPart}?sid=${sid}`;
+    const eid = document.getElementById('inpEpId').value;
+    
+    let url = `/seasonepisode/${specificPart}?sid=${sid}`;
+    url = appendIfNonEmpty(url, 'eid', eid);
+    
+    return url;
 }
 
 function checkNumericOrEmpty(str) {
@@ -71,8 +76,4 @@ function doCheckAndAlert(check, errorMessage) {
         alert(errorMessage);
 
     return check;
-}
-
-function appendIfNonEmpty(url, param, str) {
-    return `${url}${!isEmptyOrNull(str) ? `&${param}=${str}` : ''}`;
 }

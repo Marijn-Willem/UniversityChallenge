@@ -1,5 +1,5 @@
 const seasonListLoader = new ElementLoader('selSeason', function () {
-    return '/season/options';
+    return getOptionsUrl('season');
 }, null);
 
 const seasonUpsertLoader = new ElementLoader('inpId', function () {
