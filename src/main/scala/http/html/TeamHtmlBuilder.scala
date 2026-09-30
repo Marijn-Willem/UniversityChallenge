@@ -3,6 +3,7 @@ package http.html
 import db.conn.{DbManager, TeamManager}
 import db.model.Model.Team
 import http.html.HtmlUtil.*
+import util.StringUtil.getStringFromOption
 
 import java.sql.Statement
 
@@ -17,7 +18,7 @@ object TeamHtmlBuilder {
 
   def getHtmlManageTeam(id: Option[Int]): String = {
     val contentSpecific = (maybeTeam: Option[Team], stat: Statement) =>
-      s"<div>Name: <input id=\"nm\" value=\"${HtmlUtil.getStringFromOption(maybeTeam.flatMap(_.name))}\" /></div>\n" +
+      s"<div>Name: <input id=\"nm\" value=\"${getStringFromOption(maybeTeam.flatMap(_.name))}\" /></div>\n" +
         s"<div>\nCity: <select id=\"cid\">\n${CityHtmlBuilder.getCityOptions(stat, maybeTeam.map(_.cityId))}" +
         "</select>\n</div>\n"
 

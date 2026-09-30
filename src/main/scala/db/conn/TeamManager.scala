@@ -15,4 +15,10 @@ class TeamManager(stat: Statement) extends IdEntityManager[Team](stat, "team", S
     getStringForInsert(mc.name),
     mc.cityId.toString
   )
+  
+  def getListForIds(teamIds: Seq[Int]): Seq[Team] =
+    if (teamIds.nonEmpty)
+      getList(Some(s"id IN (${teamIds.mkString(",")})"))
+    else
+      Seq.empty
 }

@@ -4,9 +4,13 @@ const seasonEpisodeOptionsLoader = new ElementLoader('selEpId', function () {
     return getLoaderUrl('options')
 }, null);
 
+const seasonEpisodeTableLoader = new ElementLoader('tblEp', function () {
+    return getLoaderUrl('table');
+}, null);
+
 const insertSeasonEpisodeLoader = new ElementLoader('divIns', function () {
     return getLoaderUrl('insert')
-}, loadSeasonEpisodeOptions);
+}, loadSeasonEpisodeData);
 
 const updateLoader = new ElementLoader('divUpd', function () {
     const sid = document.getElementById('sid').value;
@@ -34,8 +38,9 @@ const updateLoader = new ElementLoader('divUpd', function () {
     return null;
 }, null);
 
-function loadSeasonEpisodeOptions() {
+function loadSeasonEpisodeData() {
     seasonEpisodeOptionsLoader.loadElement();
+    seasonEpisodeTableLoader.loadElement();
 }
 
 function insertSeasonEpisodes() {

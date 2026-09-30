@@ -32,6 +32,11 @@ object SeasonEpisodeRoute {
         getStandardRoute(SeasonEpisodeHtmlBuilder.getResultUpdateSeasonEpisode(sid.toInt, eid.toInt,
           t1id.map(_.toInt), t2id.map(_.toInt), s1.map(_.toInt), s2.map(_.toInt), dt))
       }
+    },
+    path("seasonepisode" / "table") {
+      parameters("sid") { sid =>
+        getStandardRoute(SeasonEpisodeHtmlBuilder.getSeasonEpisodeTableRows(sid.toInt))
+      }
     }
   )
 }

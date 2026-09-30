@@ -11,4 +11,8 @@ object Model {
   case class Team(id: Int, name: Option[String], cityId: Int) extends NamedIdEntity
   case class SeasonTeam(seasonId: Int, teamId: Int)
   case class SeasonEpisode(seasonId: Int, episodeId: Int, team1Id: Option[Int], team2Id: Option[Int], score1: Option[Int], score2: Option[Int], date: Option[LocalDate])
+  
+  object Round {
+    val roundIdFirstRound = 1
+  }
 }

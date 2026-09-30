@@ -2,6 +2,7 @@ package http.html
 
 import db.conn.{DbManager, IdEntityManager}
 import db.model.Model.{IdEntity, NamedIdEntity}
+import util.StringUtil.{OrderingReverseString, getStringFromOption}
 
 import java.sql.Statement
 
@@ -55,8 +56,11 @@ object HtmlUtil {
       entityNew.id.toString
     })
 
-  def getSelectOptions[T <: NamedIdEntity](man: IdEntityManager[T], sel: Option[Int]): String =
-    man.getList().sortBy(_.name.getOrElse("-")).map(getSelectOption(_, sel)).mkString
+  def getSelectOptions[T <: NamedIdEntity](man: IdEntityManager[T], sel: Option[Int], reverseOrder: Boolean = false): String = {
+    val ordering = if (reverseOrder) OrderingReverseString else Ordering.String
+
+    man.getList().sortBy(_.name.getOrElse("-"))(using ordering).map(getSelectOption(_, sel)).mkString
+  }
 
   def getSelectOption(entity: NamedIdEntity, sel: Option[Int]): String = {
     val id = entity.id
@@ -72,6 +76,4 @@ object HtmlUtil {
 
   def getPortalUrl(entityName: String, id: Option[Int]): String = s"$entityName/portal" +
     s"${getStringFromOption(id.map(x => s"?id=$x"))}"
-
-  def getStringFromOption(optStr: Option[String]): String = optStr.getOrElse("")
 }

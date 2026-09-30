@@ -2,7 +2,8 @@ package http.html
 
 import db.conn.{DbManager, SeasonManager}
 import db.model.Model.Season
-import http.html.HtmlUtil.{getInpIdInput, getPortalUrl, getSelectOptions, getStringFromOption}
+import http.html.HtmlUtil.{getInpIdInput, getPortalUrl, getSelectOptions}
+import util.StringUtil.getStringFromOption
 
 import java.sql.Statement
 
@@ -26,7 +27,7 @@ object SeasonHtmlBuilder {
   }
 
   def getHtmlSeasonOptions(id: Option[Int]): String = DbManager.getStringFromStatement((stat: Statement) =>
-    getSelectOptions(new SeasonManager(stat), id))
+    getSelectOptions(new SeasonManager(stat), id, reverseOrder = true))
 
   def getResultUpsertSeason(name: String, id: Option[Int]): String =
     HtmlUtil.getResultUpsert(id,

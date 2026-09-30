@@ -3,6 +3,14 @@ package util
 import java.time.LocalDate
 
 object LocalDateUtil {
+  object OrderingOptionalLocalDate extends Ordering[Option[LocalDate]] {
+    override def compare(x: Option[LocalDate], y: Option[LocalDate]): Int = (x, y) match {
+      case (Some(u), Some(v)) => u.compareTo(v)
+      case (None, Some(_)) => 1
+      case _ => -1
+    }
+  }
+
   def toDelimitedString(localDate: LocalDate, delim: String): String = s"${localDate.getYear}$delim" +
     s"${intToTwoDigitString(localDate.getMonthValue)}$delim" +
     s"${intToTwoDigitString(localDate.getDayOfMonth)}"

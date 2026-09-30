@@ -1,6 +1,7 @@
 package db.conn
 
 import db.model.Model.SeasonEpisode
+import util.StringUtil.getStringFromOption
 import util.LocalDateUtil
 
 import java.sql.{ResultSet, Statement}
@@ -47,7 +48,7 @@ class SeasonEpisodeManager(stat: Statement) {
 
   private def getResultSet(seasonId: Int, episodeId: Option[Int]): ResultSet =
     stat.executeQuery("SELECT seasonid, episodeid, team1id, team2id, score1, score2, \"date\" FROM seasonepisode " +
-      s"WHERE seasonid = $seasonId${episodeId.map(id => s" AND episodeid = $id").getOrElse("")}")
+      s"WHERE seasonid = $seasonId${getStringFromOption(episodeId.map(id => s" AND episodeid = $id"))}")
 
   private def getSeasonEpisodeFromResultSet(rs: ResultSet): SeasonEpisode =
     SeasonEpisode(

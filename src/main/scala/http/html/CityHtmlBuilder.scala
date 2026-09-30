@@ -3,6 +3,7 @@ package http.html
 import db.conn.{CityManager, DbManager}
 import db.model.Model.City
 import http.html.HtmlUtil.*
+import util.StringUtil.getStringFromOption
 
 import java.sql.Statement
 
