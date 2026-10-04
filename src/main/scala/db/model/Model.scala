@@ -10,7 +10,8 @@ object Model {
   case class Episode(id: Int, roundId: Int) extends IdEntity
   case class Team(id: Int, name: Option[String], cityId: Int) extends NamedIdEntity
   case class SeasonTeam(seasonId: Int, teamId: Int)
-  case class SeasonEpisode(seasonId: Int, episodeId: Int, team1Id: Option[Int], team2Id: Option[Int], score1: Option[Int], score2: Option[Int], date: Option[LocalDate])
+  case class SeasonEpisode(seasonId: Int, episodeId: Int, team1Id: Option[Int], team2Id: Option[Int], 
+                           score1: Option[Int], score2: Option[Int], date: Option[LocalDate], roundId: Option[Int] = None)
   
   object Round {
     val roundIdFirstRound = 1

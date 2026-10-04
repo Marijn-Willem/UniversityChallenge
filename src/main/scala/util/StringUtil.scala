@@ -5,5 +5,5 @@ object StringUtil {
     override def compare(x: String, y: String): Int = -x.compareTo(y)
   }
   
-  def getStringFromOption(optStr: Option[String]): String = optStr.getOrElse("")
+  def getStringFromOption(optStr: Option[String], alt: String = ""): String = optStr.getOrElse(alt)
 }

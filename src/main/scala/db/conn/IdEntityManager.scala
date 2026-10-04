@@ -1,6 +1,7 @@
 package db.conn
 
 import db.model.Model.IdEntity
+import util.StringUtil.getStringFromOption
 
 import java.sql.{ResultSet, Statement}
 import scala.collection.mutable.ArrayBuffer
@@ -25,7 +26,7 @@ abstract class IdEntityManager[T <: IdEntity](stat: Statement, val tableName: St
 
   def getList(whereClause: Option[String] = None): Seq[T] = {
     val query = s"SELECT $columnString FROM $tableName" +
-      s"${whereClause.map(x => s" WHERE $x").getOrElse("")}"
+      s"${getStringFromOption(whereClause.map(x => s" WHERE $x"))}"
     val ab = ArrayBuffer.empty[T]
 
     val rs = stat.executeQuery(query)
@@ -35,6 +36,12 @@ abstract class IdEntityManager[T <: IdEntity](stat: Statement, val tableName: St
 
     ab.toSeq
   }
+
+  def getListForIds(ids: Seq[Int]): Seq[T] =
+    if (ids.nonEmpty)
+      getList(Some(s"id IN (${ids.mkString(",")})"))
+    else
+      Seq.empty
 
   def update(mc: T): Unit = {
     val updateStatement = columnNames.zip(getInsertValues(mc)).map({ _ + " = " + _ }).mkString(", ")
@@ -52,8 +59,8 @@ abstract class IdEntityManager[T <: IdEntity](stat: Statement, val tableName: St
     1 + (if (rs.next()) rs.getInt("maxId") else 0)
   }
 
-  protected def getStringForInsert(optStr: Option[String]): String = optStr.map(x =>
-    s"'${replaceInvalidDbCharacters(x)}'").getOrElse("NULL")
+  protected def getStringForInsert(optStr: Option[String]): String = getStringFromOption(
+    optStr.map(x => s"'${replaceInvalidDbCharacters(x)}'"), "NULL")
 
   private def replaceInvalidDbCharacters(str: String) = str.replace("'", "''")
 }

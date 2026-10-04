@@ -64,8 +64,9 @@ class SeasonEpisodeManager(stat: Statement) {
   private def getOptionalIntFromResultSet(rs: ResultSet, colName: String): Option[Int] =
     Option(rs.getInt(colName)).filterNot(_ => rs.wasNull())
 
-  private def getStringForIntUpdate(maybeInt: Option[Int]): String = maybeInt.map(_.toString).getOrElse("NULL::integer") 
+  private def getStringForIntUpdate(maybeInt: Option[Int]): String =
+    getStringFromOption(maybeInt.map(_.toString), "NULL::integer")
 
   private def getStringForLocalDateUpdate(maybeLocalDate: Option[LocalDate]): String =
-    maybeLocalDate.map(ld => s"'${LocalDateUtil.toDelimitedString(ld, "-")}'").getOrElse("NULL::date")
+    getStringFromOption(maybeLocalDate.map(ld => s"'${LocalDateUtil.toDelimitedString(ld, "-")}'"), "NULL::date")
 }

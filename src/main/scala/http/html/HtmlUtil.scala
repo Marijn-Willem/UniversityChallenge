@@ -31,7 +31,7 @@ object HtmlUtil {
                                            contentSpecific: (Option[T], Statement) => String, jsList: Seq[String],
                                            returnPath: Option[String]): String = withHtmlTemplate((stat: Statement) => {
     val maybeEntity = id.map(constMan(stat).getEntityById).getOrElse(Option.empty[T])
-    val buttonValue = id.map(_ => "Update").getOrElse("Insert")
+    val buttonValue = getStringFromOption(id.map(_ => "Update"), "Insert")
 
     contentSpecific(maybeEntity, stat) +
       s"<div><input id=\"butUps\" type=\"button\" value=\"$buttonValue\" onclick=\"handleUps();\" /></div>\n" +
@@ -59,7 +59,7 @@ object HtmlUtil {
   def getSelectOptions[T <: NamedIdEntity](man: IdEntityManager[T], sel: Option[Int], reverseOrder: Boolean = false): String = {
     val ordering = if (reverseOrder) OrderingReverseString else Ordering.String
 
-    man.getList().sortBy(_.name.getOrElse("-"))(using ordering).map(getSelectOption(_, sel)).mkString
+    man.getList().sortBy(ent => getStringFromOption(ent.name))(using ordering).map(getSelectOption(_, sel)).mkString
   }
 
   def getSelectOption(entity: NamedIdEntity, sel: Option[Int]): String = {
