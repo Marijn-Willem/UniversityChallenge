@@ -2,7 +2,8 @@ package http.html
 
 import db.conn.{DbManager, IdEntityManager}
 import db.model.Model.{IdEntity, NamedIdEntity}
-import util.StringUtil.{OrderingReverseString, getStringFromOption}
+import util.StringUtil.getStringFromOption
+import util.OrderingUtil.OrderingReverseString
 
 import java.sql.Statement
 

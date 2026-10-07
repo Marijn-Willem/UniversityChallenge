@@ -1,9 +1,11 @@
 package http.html
 
 import db.conn.*
-import db.model.Model.{City, Episode, Round, SeasonEpisode, Team}
+import db.model.Model.{City, Episode, SeasonEpisode, Team}
+import db.model.Model.Round.{roundIdFirstRound, roundIdNameMap}
 import http.html.HtmlUtil.{getHiddenInput, getSelectOption, withHtmlTemplate}
-import util.LocalDateUtil.{OrderingOptionalLocalDate, getLocalDateFromString, toDelimitedString}
+import util.LocalDateUtil.{getLocalDateFromString, toDelimitedString}
+import util.OrderingUtil.{OrderingOptionalLocalDate, OrderingOptionalInt}
 import util.StringUtil.getStringFromOption
 
 import java.sql.Statement
@@ -41,13 +43,12 @@ object SeasonEpisodeHtmlBuilder {
   }, Seq("seasonepisode"), Some(s"seasonepisode/portal?sid=$seasonId&eid=$episodeId"))
 
   def getSeasonEpisodeOptions(seasonId: Int, episodeId: Option[Int]): String = DbManager.getStringFromStatement((stat: Statement) => {
-    new SeasonEpisodeManager(stat).getList(seasonId).sortBy(_.episodeId)
-      .map(se =>
-        val eid = se.episodeId
-        val attrSel = getStringFromOption(episodeId.filter(_ == eid).map(_ => " selected=\"selected\""))
+    val episodeList = new EpisodeManager(stat).getList()
+    val episodeListInSeason = new SeasonEpisodeManager(stat).getList(seasonId)
+      .sortBy(se => -se.episodeId)
+      .flatMap(se => episodeList.find(_.id == se.episodeId))
 
-        s"<option value=\"$eid\"$attrSel>Episode $eid</option>\n"
-      ).mkString
+    episodeListInSeason.map(getSelectOption(_, episodeId)).mkString
   })
 
   def getSeasonEpisodeTableRows(seasonId: Int): String = DbManager.getStringFromStatement((stat: Statement) => {
@@ -57,21 +58,23 @@ object SeasonEpisodeHtmlBuilder {
     val teams = new TeamManager(stat).getListForIds(teamIds)
     val cities = new CityManager(stat).getListForIds(teams.map(_.cityId))
 
-    val seasonEpisodesOrdered = seasonEpisodes.sortBy(_.date)(using OrderingOptionalLocalDate)
-    val seasonEpisodesFirstRound = seasonEpisodesOrdered.takeWhile(_.roundId.contains(Round.roundIdFirstRound))
+    val seasonEpisodesOrdered = seasonEpisodes
+      .sortBy(_.date)(using OrderingOptionalLocalDate)
+      .sortBy(_.roundId.map(_* -1))(using OrderingOptionalInt)
+    val seasonEpisodesFirstRound = seasonEpisodesOrdered.takeWhile(_.roundId.contains(roundIdFirstRound))
 
     val losingScoreThreshold = getLosingScoreThreshold(seasonEpisodesFirstRound)
 
-    "<tr><th>Team 1</th><th>Team 2</th><th>Score 1</th><th>Score 2</th></tr>\n" +
+    "<tr><th>Team 1</th><th>Team 2</th><th>Score 1</th><th>Score 2</th><th>Round</th></tr>\n" +
       seasonEpisodesOrdered.map(getSeasonEpisodeTableRow(_, teams, cities, losingScoreThreshold)).mkString
   })
 
-  def getResultInsertSeasonEpisodes(seasonId: Int): String = DbManager.getStringFromStatement((stat: Statement) => {
+  def getResultInsertSeasonEpisodes(seasonId: Int): String = DbManager.getStringFromStatement((stat: Statement) =>
     if (new SeasonEpisodeManager(stat).insertEpisodes(seasonId))
       "Insert successful"
     else
       "No insert performed"
-  })
+  )
 
   def getResultUpdateSeasonEpisode(seasonId: Int, episodeId: Int,
                                    team1Id: Option[Int], team2Id: Option[Int],
@@ -103,19 +106,18 @@ object SeasonEpisodeHtmlBuilder {
     val cssWinnerAttr1 = if (score1AsInt > score2AsInt) cssAttrWinner else ""
     val cssWinnerAttr2 = if (score2AsInt > score1AsInt) cssAttrWinner else ""
 
-    val cssLosingScore1 = seasonEpisode.roundId.contains(Round.roundIdFirstRound) &&
-      score1AsInt < score2AsInt &&
-      score1AsInt >= losingScoreThreshold
-    val cssLosingScore2 = seasonEpisode.roundId.contains(Round.roundIdFirstRound) &&
-      score2AsInt < score1AsInt &&
-      score2AsInt >= losingScoreThreshold
+    val isFirstRound = seasonEpisode.roundId.contains(roundIdFirstRound)
+
+    val cssLosingScore1 = isFirstRound && score1AsInt < score2AsInt && score1AsInt >= losingScoreThreshold
+    val cssLosingScore2 = isFirstRound && score2AsInt < score1AsInt && score2AsInt >= losingScoreThreshold
     val cssLosingScoreAttr1 = if (cssLosingScore1) cssAttrLosingScore else ""
     val cssLosingScoreAttr2 = if (cssLosingScore2) cssAttrLosingScore else ""
 
     s"<tr><td$cssWinnerAttr1>${getTeamDescription(team1, cityList)}</td>" +
       s"<td$cssWinnerAttr2>${getTeamDescription(team2, cityList)}</td>" +
       s"<td$cssLosingScoreAttr1>${getStringFromOption(seasonEpisode.score1.map(_.toString))}</td>" +
-      s"<td$cssLosingScoreAttr2>${getStringFromOption(seasonEpisode.score2.map(_.toString))}</td></tr>\n"
+      s"<td$cssLosingScoreAttr2>${getStringFromOption(seasonEpisode.score2.map(_.toString))}</td>" +
+      s"<td>${getStringFromOption(seasonEpisode.roundId.flatMap(roundIdNameMap.get))}</td></tr>\n"
   }
 
   private def setRoundId(seasonEpisode: SeasonEpisode, episodes: Seq[Episode]): SeasonEpisode =
