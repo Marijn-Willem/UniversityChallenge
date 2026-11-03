@@ -3,6 +3,7 @@ package http
 import http.html.FrontHtmlBuilder
 import http.route.RouteUtil.getStandardRoute
 import http.route.{CityRoute, SeasonEpisodeRoute, SeasonRoute, SeasonTeamRoute, TeamRoute}
+import util.EnvironmentUtil.getEnvironmentVariable
 import org.apache.pekko
 import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
@@ -36,9 +37,10 @@ object Main {
       implicit val system: ActorSystem[Nothing] = ctx.system
       implicit val ec: ExecutionContext = system.executionContext
 
-      val port = Try { System.getenv("UC_PORT").toInt }.toOption.getOrElse(8082)
+      val host = getEnvironmentVariable("UC_HOST", "127.0.0.1")
+      val port = Try { getEnvironmentVariable("UC_PORT", "8082").toInt }.toOption.getOrElse(8082)
 
-      Http().newServerAt("127.0.0.1", port).bind(route)
+      Http().newServerAt(host, port).bind(route)
         .map(_.addToCoordinatedShutdown(10.seconds))
 
       Behaviors.same
