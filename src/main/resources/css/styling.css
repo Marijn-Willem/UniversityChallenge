@@ -3,3 +3,4 @@ div {margin-left: 40%}
 table {margin-left: 20%}
 .winner {font-weight: bold}
 .losingScore {background-color: darkseagreen}
+.knockedOut {color: red}

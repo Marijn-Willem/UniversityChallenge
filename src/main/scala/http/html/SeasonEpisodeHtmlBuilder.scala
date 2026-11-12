@@ -1,11 +1,12 @@
 package http.html
 
 import db.conn.*
+import db.model.Model.Round.{roundIdFirstRound, roundIdNameMap, roundIdQuarterFinal, roundIdRepechage}
 import db.model.Model.{City, Episode, SeasonEpisode, Team}
-import db.model.Model.Round.{roundIdFirstRound, roundIdNameMap}
 import http.html.HtmlUtil.{getHiddenInput, getSelectOption, withHtmlTemplate}
 import util.LocalDateUtil.{getLocalDateFromString, toDelimitedString}
-import util.OrderingUtil.{OrderingOptionalLocalDate, OrderingOptionalInt}
+import util.OptionUtil.equalsPure
+import util.OrderingUtil.{OrderingOptionalInt, OrderingOptionalLocalDate}
 import util.StringUtil.getStringFromOption
 
 import java.sql.Statement
@@ -13,6 +14,7 @@ import java.sql.Statement
 object SeasonEpisodeHtmlBuilder {
   private val cssAttrWinner = " class=\"winner\""
   private val cssAttrLosingScore = " class=\"losingScore\""
+  private val cssAttrKnockedOut = " class=\"knockedOut\""
 
   def getHtmlSeasonEpisodePortal(seasonId: Int, episodeId: Option[Int]): String = withHtmlTemplate((stat: Statement) => {
     "<div>\n<select id=\"selEpId\">\n</select>\n</div>\n" +
@@ -53,7 +55,7 @@ object SeasonEpisodeHtmlBuilder {
 
   def getSeasonEpisodeTableRows(seasonId: Int): String = DbManager.getStringFromStatement((stat: Statement) => {
     val episodeList = new EpisodeManager(stat).getList()
-    val seasonEpisodes = new SeasonEpisodeManager(stat).getList(seasonId).map(setRoundId(_, episodeList))
+    val seasonEpisodes = new SeasonEpisodeManager(stat).getList(seasonId).map(setHelpFields(_, episodeList))
     val teamIds = new SeasonTeamManager(stat).getTeamIdsForSeason(seasonId)
     val teams = new TeamManager(stat).getListForIds(teamIds)
     val cities = new CityManager(stat).getListForIds(teams.map(_.cityId))
@@ -61,12 +63,16 @@ object SeasonEpisodeHtmlBuilder {
     val seasonEpisodesOrdered = seasonEpisodes
       .sortBy(_.date)(using OrderingOptionalLocalDate)
       .sortBy(_.roundId.map(_* -1))(using OrderingOptionalInt)
-    val seasonEpisodesFirstRound = seasonEpisodesOrdered.takeWhile(_.roundId.contains(roundIdFirstRound))
+    val seasonEpisodesFirstRound = sliceEpisodesByRoundId(seasonEpisodesOrdered, roundIdFirstRound)
+    val seasonEpisodesRepechage = sliceEpisodesByRoundId(seasonEpisodesOrdered, roundIdRepechage)
+    val seasonEpisodesQuarterFinal = sliceEpisodesByRoundId(seasonEpisodesOrdered, roundIdQuarterFinal)
 
     val losingScoreThreshold = getLosingScoreThreshold(seasonEpisodesFirstRound)
+    val teamIdsRepechage = seasonEpisodesRepechage.flatMap(se => Seq(se.team1Id, se.team2Id).flatten)
 
     "<tr><th>Team 1</th><th>Team 2</th><th>Score 1</th><th>Score 2</th><th>Round</th></tr>\n" +
-      seasonEpisodesOrdered.map(getSeasonEpisodeTableRow(_, teams, cities, losingScoreThreshold)).mkString
+      seasonEpisodesOrdered.map(getSeasonEpisodeTableRow(_, teams, cities, losingScoreThreshold,
+        teamIdsRepechage, seasonEpisodesQuarterFinal)).mkString
   })
 
   def getResultInsertSeasonEpisodes(seasonId: Int): String = DbManager.getStringFromStatement((stat: Statement) =>
@@ -97,31 +103,56 @@ object SeasonEpisodeHtmlBuilder {
   }
 
   private def getSeasonEpisodeTableRow(seasonEpisode: SeasonEpisode, teamList: Seq[Team],
-                                       cityList: Seq[City], losingScoreThreshold: Int): String = {
+                                       cityList: Seq[City], losingScoreThreshold: Int,
+                                       teamIdsRepechage: Seq[Int], episodesQuarterFinal: Seq[SeasonEpisode]): String = {
     val team1 = seasonEpisode.team1Id.flatMap(teamId => teamList.find(_.id == teamId))
     val team2 = seasonEpisode.team2Id.flatMap(teamId => teamList.find(_.id == teamId))
-    val score1AsInt = seasonEpisode.score1.getOrElse(0)
-    val score2AsInt = seasonEpisode.score2.getOrElse(0)
 
-    val cssWinnerAttr1 = if (score1AsInt > score2AsInt) cssAttrWinner else ""
-    val cssWinnerAttr2 = if (score2AsInt > score1AsInt) cssAttrWinner else ""
+    val cssWinnerAttr1 = if (equalsPure(seasonEpisode.team1Id, seasonEpisode.winningTeamId)) cssAttrWinner else ""
+    val cssWinnerAttr2 = if (equalsPure(seasonEpisode.team2Id, seasonEpisode.winningTeamId)) cssAttrWinner else ""
 
+    val isTeam1Losing = equalsPure(seasonEpisode.team1Id, seasonEpisode.losingTeamId)
+    val isTeam2Losing = equalsPure(seasonEpisode.team2Id, seasonEpisode.losingTeamId)
     val isFirstRound = seasonEpisode.roundId.contains(roundIdFirstRound)
+    val losingScoreNotBelowThreshold = seasonEpisode.losingScore.exists(_ >= losingScoreThreshold)
 
-    val cssLosingScore1 = isFirstRound && score1AsInt < score2AsInt && score1AsInt >= losingScoreThreshold
-    val cssLosingScore2 = isFirstRound && score2AsInt < score1AsInt && score2AsInt >= losingScoreThreshold
+    val cssLosingScore1 = isFirstRound && losingScoreNotBelowThreshold && isTeam1Losing
+    val cssLosingScore2 = isFirstRound && losingScoreNotBelowThreshold && isTeam2Losing
     val cssLosingScoreAttr1 = if (cssLosingScore1) cssAttrLosingScore else ""
     val cssLosingScoreAttr2 = if (cssLosingScore2) cssAttrLosingScore else ""
 
-    s"<tr><td$cssWinnerAttr1>${getTeamDescription(team1, cityList)}</td>" +
-      s"<td$cssWinnerAttr2>${getTeamDescription(team2, cityList)}</td>" +
+    val isKO = isKnockedOut(seasonEpisode, losingScoreThreshold, teamIdsRepechage, episodesQuarterFinal)
+
+    val cssKnockedOutAttr1 = if (isKO && isTeam1Losing) cssAttrKnockedOut else ""
+    val cssKnockedOutAttr2 = if (isKO && isTeam2Losing) cssAttrKnockedOut else ""
+
+    s"<tr><td$cssWinnerAttr1$cssKnockedOutAttr1>${getTeamDescription(team1, cityList)}</td>" +
+      s"<td$cssWinnerAttr2$cssKnockedOutAttr2>${getTeamDescription(team2, cityList)}</td>" +
       s"<td$cssLosingScoreAttr1>${getStringFromOption(seasonEpisode.score1.map(_.toString))}</td>" +
       s"<td$cssLosingScoreAttr2>${getStringFromOption(seasonEpisode.score2.map(_.toString))}</td>" +
       s"<td>${getStringFromOption(seasonEpisode.roundId.flatMap(roundIdNameMap.get))}</td></tr>\n"
   }
 
-  private def setRoundId(seasonEpisode: SeasonEpisode, episodes: Seq[Episode]): SeasonEpisode =
-    seasonEpisode.copy(roundId = episodes.collectFirst { case e if e.id == seasonEpisode.episodeId => e.roundId })
+  private def setHelpFields(seasonEpisode: SeasonEpisode, episodes: Seq[Episode]): SeasonEpisode = {
+    val maybeScoreBasedData = for {
+      score1 <- seasonEpisode.score1
+      score2 <- seasonEpisode.score2
+      team1Id <- seasonEpisode.team1Id
+      team2Id <- seasonEpisode.team2Id
+      (teamWinId, teamLoseId, scoreLose) = if (score1 > score2) (team1Id, team2Id, score2) else (team2Id, team1Id, score1)
+    } yield (teamWinId, teamLoseId, scoreLose)
+
+    seasonEpisode.copy(
+      roundId = episodes.collectFirst { case e if e.id == seasonEpisode.episodeId => e.roundId },
+      winningTeamId = maybeScoreBasedData.map(_._1),
+      losingTeamId = maybeScoreBasedData.map(_._2),
+      losingScore = maybeScoreBasedData.map(_._3)
+    )
+  }
+
+  private def sliceEpisodesByRoundId(seasonEpisodes: Seq[SeasonEpisode], roundId: Int): Seq[SeasonEpisode] =
+    seasonEpisodes.dropWhile(se => !se.roundId.contains(roundId))
+      .takeWhile(_.roundId.contains(roundId))
 
   private def getLosingScoreThreshold(seasonEpisodes: Seq[SeasonEpisode]): Int =
     seasonEpisodes
@@ -141,4 +172,20 @@ object SeasonEpisodeHtmlBuilder {
 
     getStringFromOption(maybeTeam.flatMap(_.name).map(x => s"$x$cityAddition"))
   }
+
+  private def isKnockedOut(seasonEpisode: SeasonEpisode, losingScoreThreshold: Int,
+                           teamIdsRepechage: Seq[Int], episodesQuarterFinal: Seq[SeasonEpisode]): Boolean =
+    (for {
+      losingTeamId <- seasonEpisode.losingTeamId
+      losingScore <- seasonEpisode.losingScore
+      roundId <- seasonEpisode.roundId
+    } yield
+      roundId match {
+        case `roundIdFirstRound` => losingScore < losingScoreThreshold ||
+          (losingScore == losingScoreThreshold && teamIdsRepechage.length == 4 && !teamIdsRepechage.contains(losingTeamId))
+        case `roundIdQuarterFinal` => episodesQuarterFinal
+          .takeWhile(_.episodeId != seasonEpisode.episodeId)
+          .count(_.losingTeamId.contains(losingTeamId)) == 1
+        case _ => true
+      }).exists(identity)
 }
